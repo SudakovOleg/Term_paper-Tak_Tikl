@@ -216,7 +216,7 @@ bool Desk::check_win()
 Desk::Desk(QWidget *parent)
     : QDialog(parent)
 {
-    botRobert = new ai(4, -1);
+    botRobert = new ai(6, -1);
     //Фишка не выбрана
     isClicked = false;
     //Задаем размер поля
@@ -224,11 +224,11 @@ Desk::Desk(QWidget *parent)
     //Выделяем память под слоя, кнопки и матрицу
     lay = new QGridLayout;
     cell = new QPushButton*[size];
-    matrix = new int*[size];
+    matrix.resize(size);
     for (int i(0); i < size ; i++)
     {
         cell[i] = new QPushButton[size];
-        matrix[i] = new int[size];
+        matrix[i].resize(size);
         for(int j(0); j < size; j++)
         {
             connect(&cell[i][j], SIGNAL(clicked()), SLOT(Turn()));
@@ -403,7 +403,7 @@ void Desk::Turn()
             QMessageBox::information(nullptr, "Победа", "Белые победили");
         }
         //Ход бота
-        botRobert->ai_turn(matrix);
+        botRobert->max(matrix, 0, -10000, 10000);
         //Проверяем есть ли победа
         if(check_win())
         {
@@ -426,9 +426,7 @@ Desk::~Desk()
     for(int i(0); i < size; i++)
     {
         delete[]cell[i];
-        delete[]matrix[i];
     }
-    delete matrix;
     delete cell;
     delete lay;
     delete botRobert;

@@ -1,12 +1,15 @@
 #include "ai.h"
 #include <QMessageBox>
 
-bool ai::isTerminal(int **matrix, int deph)
+//Проверка терминального состояния
+bool ai::isTerminal(QVector<QVector<int> > matrix, int deph)
 {
+    //Условие глубины
     if(level < deph)
     {
         return true;
     }
+    //Условие победы
     if(check_win(matrix))
     {
         return true;
@@ -14,7 +17,8 @@ bool ai::isTerminal(int **matrix, int deph)
     return false;
 }
 
-bool ai::check_win(int** matrix)
+//Проверка победы
+bool ai::check_win(QVector<QVector<int>> matrix)
 {
     //Ищем фишку
     for(int x(0); x < size; x++)
@@ -174,18 +178,7 @@ bool ai::check_win(int** matrix)
     return false;
 }
 
-void ai::clear(int** prev_X, int** prev_Y, int** new_X, int** new_Y)
-{
-    for(int x(0); x < size; x++)
-        for(int y(0); y < size; y++)
-        {
-            prev_X[x][y] = -1;
-            prev_Y[x][y] = -1;
-            new_X[x][y] = -1;
-            new_Y[x][y] = -1;
-        }
-}
-
+//Конструктор принимающий уровень глубины и код игрока
 ai::ai(int lvl, int code)
 {
     codeThisPlayer = code;
@@ -194,23 +187,14 @@ ai::ai(int lvl, int code)
     cost_FirstPlayer = 0;
     cost_SecondPlayer = 0;
     size = 4;
-    rmMatrix = new int*[size];
+    rmMatrix.resize(size);
     for (int i(0); i < size; i++)
     {
-        rmMatrix[i] = new int[size];
+        rmMatrix[i].resize(size);
     }
 }
 
-ai::~ai()
-{
-    for (int i(0); i < size; i++)
-    {
-        delete [] rmMatrix[i];
-    }
-    delete [] rmMatrix;
-}
-
-int ai::cost_Of_Desk(int **matrix)
+int ai::cost_Of_Desk(QVector<QVector<int>> matrix)
 {
     if(check_win(matrix))
         return 1000;
@@ -220,9 +204,11 @@ int ai::cost_Of_Desk(int **matrix)
     }
 }
 
-void ai::generate_next_Turn(int **matrix, int** prev_X, int** prev_Y, int** new_X, int** new_Y)
+void ai::generate_next_Turn(QVector<QVector<int>> matrix,  QVector<QVector<int>> &prev_X,  QVector<QVector<int>> &prev_Y,  QVector<QVector<int>> &new_X,  QVector<QVector<int>> &new_Y)
 {
+    //Фишка
     int i = -1;
+    //Вариант хода
     int j = 0;
     //Если это компьютер
     if(isThisPlayer)
@@ -234,6 +220,8 @@ void ai::generate_next_Turn(int **matrix, int** prev_X, int** prev_Y, int** new_
             {
                 if(matrix[x][y] == codeThisPlayer)
                 {
+                    //Проверяем на выход за приделы
+                    //И после ищем все возможные варианты ходов для этой фишки
                     i++; j = 0;
                     if(i >= size || j >= size)
                     {
@@ -334,200 +322,161 @@ void ai::generate_next_Turn(int **matrix, int** prev_X, int** prev_Y, int** new_
     }
 }
 
-void ai::copyMatrix(int **old_Matrix, int **new_Matrix,int size)
+//Инициализатор массивов хранящих средний ход
+void ai::init(QVector<QVector<int>> &prev_X, QVector<QVector<int>> &prev_Y, QVector<QVector<int>> &new_X, QVector<QVector<int>> &new_Y)
 {
+
+    //Нули не подходят так как можно ходить на клетку 0,0 в матрице
+    //Поэтуму переписываем всё на -1
     for(int x(0); x < size; x++)
         for(int y(0); y < size; y++)
         {
-            new_Matrix[x][y] = old_Matrix[x][y];
+            prev_X[x][y] = -1;
+            prev_Y[x][y] = -1;
+            new_X[x][y] = -1;
+            new_Y[x][y] = -1;
         }
 }
 
-int ai::min(int **matrix,int deph, int alpha, int beta)
+//Функиця минимума
+int ai::min(QVector<QVector<int> > &matrix, int deph, int alpha, int beta)
 {
+    //Это не компьютер
     isThisPlayer = false;
+    //Проверка терминального состояния
     if(isTerminal(matrix, deph))
     {
         return cost_Of_Desk(matrix);
     }
-    int **prev_X = new int*[size];
-    int **prev_Y = new int*[size];
-    int **new_X = new int*[size];
-    int **new_Y = new int*[size];
-    for (int i(0); i < size; i++)
+    //Объявление векторов для хранения следующих ходов
+    QVector<QVector<int>> prev_X(size);
+    QVector<QVector<int>> prev_Y(size);
+    QVector<QVector<int>> new_X(size);
+    QVector<QVector<int>> new_Y(size);
+    for(int i(0); i < size; i++)
     {
-        prev_X[i] = new int[size];
-        prev_Y[i] = new int[size];
-        new_X[i] = new int[size];
-        new_Y[i] = new int[size];
+        prev_X[i].resize(size);
+        prev_Y[i].resize(size);
+        new_X[i].resize(size);
+        new_Y[i].resize(size);
     }
+
+    //Иницциализация
     int score = beta;
-    clear(prev_X, prev_Y, new_X, new_Y);
+    init( prev_X, prev_Y, new_X, new_Y);
     generate_next_Turn(matrix, prev_X, prev_Y, new_X, new_Y);
+
+    //Перебираем сгенерированные ходы
     for(int x(0); x < size; x++)
         for(int y(0); y < size; y++)
         {
             if(prev_X[x][y] != -1 && prev_Y[x][y] != -1)
             {
-                int** temp_Matrix = new int*[size];
+                //Создаем временную матрицу
+                QVector<QVector<int>> temp_Matrix(size);
                 for (int i(0); i < size; i++)
                 {
-                    temp_Matrix[i] = new int[size];
+                    temp_Matrix[i].resize(size);
                 }
-                copyMatrix(matrix, temp_Matrix, size);
+                //Делаем копию оригинальной
+                temp_Matrix = matrix;
+                //Делаем ход
                 temp_Matrix[prev_X[x][y]][prev_Y[x][y]] = 0;
                 temp_Matrix[new_X[x][y]][new_Y[x][y]] = -codeThisPlayer;
+                //Отправляем в рекурсию
                 int s = max(temp_Matrix, deph + 1, alpha, score);
                 isThisPlayer = false;
-                for (int i(0); i < size; i++)
-                {
-                    delete [] temp_Matrix[i];
-                }
-                delete [] temp_Matrix;
+                //Проверяем рекорд, если лучше, устанавливаем
                 if(s < score)
                     score = s;
+                //Условие выхода по остечению
                 if(score <= alpha)
                     return score;
             }
         }
-    for (int i(0); i < size; i++)
-    {
-        delete [] prev_X[i];
-        delete [] prev_Y[i];
-        delete [] new_X[i];
-        delete [] new_Y[i];
-    }
-    delete[] prev_X;
-    delete[] prev_Y;
-    delete[] new_X;
-    delete[] new_Y;
+    //Возвращаем рекорд
     return score;
 }
 
-int ai::max(int **matrix, int deph, int alpha, int beta)
+//Функция макса
+int ai::max(QVector<QVector<int>> &matrix, int deph, int alpha, int beta)
 {
+    //Это компьютер
     isThisPlayer = true;
+    //Проверка терминального состояния
     if(isTerminal(matrix, deph))
     {
         return -cost_Of_Desk(matrix);
     }
-    int **prev_X = new int*[size];
-    int **prev_Y = new int*[size];
-    int **new_X = new int*[size];
-    int **new_Y = new int*[size];
-    for (int i(0); i < size; i++)
+    //Объявление векторов для хранения следующих ходов
+    QVector<QVector<int>> prev_X(size);
+    QVector<QVector<int>> prev_Y(size);
+    QVector<QVector<int>> new_X(size);
+    QVector<QVector<int>> new_Y(size);
+    for(int i(0); i < size; i++)
     {
-        prev_X[i] = new int[size];
-        prev_Y[i] = new int[size];
-        new_X[i] = new int[size];
-        new_Y[i] = new int[size];
+        prev_X[i].resize(size);
+        prev_Y[i].resize(size);
+        new_X[i].resize(size);
+        new_Y[i].resize(size);
     }
-    int score = alpha;
-    clear(prev_X, prev_Y, new_X, new_Y);
-    generate_next_Turn(matrix, prev_X, prev_Y, new_X, new_Y);
-    for(int x(0); x < size; x++)
-        for(int y(0); y < size; y++)
-        {
-            if(prev_X[x][y] != -1 && prev_Y[x][y] != -1)
-            {
-                int** temp_Matrix = new int*[size];
-                for (int i(0); i < size; i++)
-                {
-                    temp_Matrix[i] = new int[size];
-                }
-                copyMatrix(matrix, temp_Matrix, size);
-                temp_Matrix[prev_X[x][y]][prev_Y[x][y]] = 0;
-                temp_Matrix[new_X[x][y]][new_Y[x][y]] = codeThisPlayer;
-                int s = min(temp_Matrix, deph + 1, score, beta);
-                isThisPlayer = true;
-                for (int i(0); i < size; i++)
-                {
-                    delete [] temp_Matrix[i];
-                }
-                delete [] temp_Matrix;
-                if(s > score)
-                    score = s;
-                if(score >= beta)
-                    return score;
-            }
-        }
-    for (int i(0); i < size; i++)
-    {
-        delete [] prev_X[i];
-        delete [] prev_Y[i];
-        delete [] new_X[i];
-        delete [] new_Y[i];
-    }
-    delete[] prev_X;
-    delete[] prev_Y;
-    delete[] new_X;
-    delete[] new_Y;
-    return score;
-}
 
-void ai::ai_turn(int **matrix)
-{
-    int **prev_X = new int*[size];
-    int **prev_Y = new int*[size];
-    int **new_X = new int*[size];
-    int **new_Y = new int*[size];
-    for (int i(0); i < size; i++)
-    {
-        prev_X[i] = new int[size];
-        prev_Y[i] = new int[size];
-        new_X[i] = new int[size];
-        new_Y[i] = new int[size];
-    }
-    isThisPlayer = true;
-    int score = -10000;
-    clear(prev_X, prev_Y, new_X, new_Y);
+    //Иницциализация
+    int score = alpha;
+    init( prev_X, prev_Y, new_X, new_Y);
     generate_next_Turn(matrix, prev_X, prev_Y, new_X, new_Y);
+
+    //Перебираем сгенерированные ходы
     for(int x(0); x < size; x++)
         for(int y(0); y < size; y++)
         {
             if(prev_X[x][y] != -1 && prev_Y[x][y] != -1)
             {
-                int** temp_Matrix = new int*[size];
+                //Создаем временную матрицу
+                QVector<QVector<int>> temp_Matrix(size);
                 for (int i(0); i < size; i++)
                 {
-                    temp_Matrix[i] = new int[size];
+                    temp_Matrix[i].resize(size);
                 }
-                copyMatrix(matrix, temp_Matrix, size);
+                //Делаем копию оригинальной
+                temp_Matrix = matrix;
+                //Делаем ход
                 temp_Matrix[prev_X[x][y]][prev_Y[x][y]] = 0;
                 temp_Matrix[new_X[x][y]][new_Y[x][y]] = codeThisPlayer;
-                if(check_win(temp_Matrix))
+                //Проверяем не победа ли, если да и глубина 0, то сразу его выполняем без рекурсии
+                if(deph == 0 && check_win(temp_Matrix))
                 {
                     x = size;
                     y = size;
                     score = 10000;
-                    copyMatrix(temp_Matrix, rmMatrix, size);
+                    rmMatrix = temp_Matrix;
                 }
+                //Если не победный ход
                 else
                 {
-                    int s = min(temp_Matrix, 0, score, 10000);
+                    //Отправляем в рекурсию
+                    int s = min(temp_Matrix, deph + 1, score, beta);
+                    //Проверяем рекорд, если лучше, устанавливаемы
                     if(s > score)
                     {
+                        //При 0 глубине отмечаем этот ход как лучший
+                        if(deph == 0)
+                            rmMatrix = temp_Matrix;
                         score = s;
-                        copyMatrix(temp_Matrix, rmMatrix, size);
                     }
-                    for (int i(0); i < size; i++)
+                    //Условие выхода по остечению
+                    if(score >= beta)
                     {
-                        delete [] temp_Matrix[i];
+                        //При 0 глубине отмечаем этот ход как лучший и передаем в оригинальную матрицу
+                        if(deph == 0)
+                            matrix = temp_Matrix;
+                        return score;
                     }
-                    delete [] temp_Matrix;
                 }
             }
         }
-    copyMatrix(rmMatrix, matrix, size);
-    for (int i(0); i < size; i++)
-    {
-        delete [] prev_X[i];
-        delete [] prev_Y[i];
-        delete [] new_X[i];
-        delete [] new_Y[i];
-    }
-    delete[] prev_X;
-    delete[] prev_Y;
-    delete[] new_X;
-    delete[] new_Y;
+    //При 0 глубине отмечаем этот ход как лучший и передаем в оригинальную матрицу
+    if(deph == 0)
+         matrix = rmMatrix;
+    return score;
 }

@@ -18,7 +18,7 @@ private:
     //Размер поля
     int size;
     //Матрица игры
-    int **matrix;
+    QVector<QVector<int>> matrix;
     //Флаг и переменные временного хранения
     bool isClicked;
     int mX, mY;

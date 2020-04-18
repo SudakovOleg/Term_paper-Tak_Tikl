@@ -1,11 +1,7 @@
-﻿#ifndef AI_H
+#ifndef AI_H
 #define AI_H
 
-/*TODO
- * Ввести альфа бета отсичени и сделать максимально глубокое раскрытие
- * Ревью в новый проект
- * В ревью добавить новое стартовое меню
-*/
+#include <QVector>
 
 class ai
 {
@@ -16,20 +12,17 @@ private:
     int size;
     int cost_FirstPlayer;
     int cost_SecondPlayer;
-    int** rmMatrix;
-    bool isTerminal(int **matrix, int deph);
-    bool check_win(int **matrix);
-    void clear(int** prev_X, int** prev_Y, int** new_X, int** new_Y);
+    QVector<QVector<int> > rmMatrix;
+    bool isTerminal(QVector<QVector<int>> matrix, int deph);
+    bool check_win(QVector<QVector<int> > matrix);
 public:
     ai(int lvl, int code);
-    ~ai();
-    int cost_Of_Desk(int** matrix);
-    void generate_next_Turn(int** matrix, int** prev_X, int** prev_Y, int** new_X, int** new_Y);
-    static void copyMatrix(int** old_Matrix, int** new_Matrix, int size);
-    int min(int** matrix,int deph, int alpha, int beta);
-    int max(int** matrix, int deph, int alpha, int beta);
-    int minimax(int** matrix,int deph, int player);
-    void ai_turn(int** matrix);
+    int cost_Of_Desk(QVector<QVector<int>> matrix);
+    void generate_next_Turn(QVector<QVector<int>> matrix, QVector<QVector<int>> &prev_X, QVector<QVector<int>> &prev_Y, QVector<QVector<int>> &new_X, QVector<QVector<int>> &new_Y);
+    int min(QVector<QVector<int>> &matrix,int deph, int alpha, int beta);
+    int max(QVector<QVector<int>> &matrix, int deph, int alpha, int beta);
+    void ai_turn(QVector<QVector<int>> &matrix);
+    void init(QVector<QVector<int> > &prev_X, QVector<QVector<int> > &prev_Y, QVector<QVector<int> > &new_X, QVector<QVector<int> > &new_Y);
 };
 
 #endif // AI_H
